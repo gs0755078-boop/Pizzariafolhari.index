@@ -2,245 +2,290 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SISTEMA PIZZARIA - DADOS SALVOS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PIZZARIA FOLHARI - V6</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    
     <style>
-        :root { --p: #e63946; --s: #1d3557; --g: #2a9d8f; --e: #f4a261; --w: #25d366; }
-        body { font-family: 'Segoe UI', sans-serif; background: #cbd5e0; margin: 0; padding: 10px; }
-        .main { max-width: 800px; margin: auto; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; }
-        
-        .tabs { display: flex; background: var(--s); border-bottom: 4px solid var(--p); overflow-x: auto; }
-        .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: white; cursor: pointer; font-weight: bold; white-space: nowrap; text-transform: uppercase; }
-        .tab-btn.active { background: var(--p); }
+        :root { --p: #e63946; --bg: #0b111a; --card: #161d29; --txt: #ffffff; --sub: #8b97a8; --w: #25d366; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--txt); margin: 0; padding: 10px 10px 100px 10px; }
+        .main { max-width: 500px; margin: auto; }
 
-        .content { padding: 20px; display: none; }
+        input, select, textarea { 
+            width: 100%; padding: 16px; margin: 8px 0; border: 1px solid #2d3748; 
+            border-radius: 14px; background: #1a202c; color: white; font-size: 16px; outline: none; box-sizing: border-box;
+        }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { padding: 12px 20px; border: none; border-radius: 25px; background: var(--card); color: var(--sub); font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .tab-btn.active { background: var(--p); color: white; }
+
+        .content { display: none; }
         .content.active { display: block; }
 
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+        .card-item { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--p); }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 14px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
+        .btn-p { background: var(--p); color: white; }
+        .btn-zap { background: var(--w); color: white; margin-top: 15px; }
 
-        input, select { 
-            width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; 
-            box-sizing: border-box; font-size: 16px; text-transform: uppercase; 
-        }
-        
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; text-transform: uppercase; }
-        .btn-add { background: var(--g); font-size: 1.1em; }
-        .btn-salvar { background: var(--s); }
-        .btn-whatsapp { background: var(--w); margin-top: 10px; }
-
-        .card-pedido { background: white; border: 1px solid #ddd; border-left: 10px solid var(--g); padding: 15px; margin-bottom: 15px; border-radius: 8px; position: relative; text-transform: uppercase; }
-        .card-entrega { border-left-color: var(--e); background: #fffcf0; }
-        .btn-fechar { position: absolute; right: 10px; top: 10px; background: #ff5c5c; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; text-transform: uppercase; }
-        table td, table th { padding: 10px; border: 1px solid #eee; text-align: left; }
-        .excluir { color: var(--p); cursor: pointer; font-weight: bold; text-align: center; }
-        pre { white-space: pre-wrap; font-family: inherit; margin: 0; }
-        h3 { text-transform: uppercase; margin-top: 0; color: var(--s); }
+        .footer-total { position: fixed; bottom: 0; left: 0; right: 0; background: #161d29; padding: 15px 20px; border-top: 3px solid var(--p); display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
+        .total-price { color: var(--p); font-size: 24px; font-weight: bold; }
+        pre { white-space: pre-wrap; font-family: inherit; margin: 0; font-size: 14px; }
+        .borda-box { background: #1a202c; padding: 12px; border-radius: 12px; margin: 10px 0; border: 1px dashed var(--sub); }
     </style>
 </head>
 <body>
 
 <div class="main">
-    <nav class="tabs">
-        <button class="tab-btn active" onclick="setor(event, 's-pedido')">🛒 PEDIDO</button>
-        <button class="tab-btn" onclick="setor(event, 's-pizzas')">🍕 PIZZAS</button>
-        <button class="tab-btn" onclick="setor(event, 's-bordas')">➿ BORDAS</button>
-        <button class="tab-btn" onclick="setor(event, 's-refris')">🥤 REFRIS</button>
-        <button class="tab-btn" onclick="setor(event, 's-entregas')">🚀 ENTREGAS</button>
-    </nav>
+    <h2 style="text-align:center;">🍕 <span style="color:var(--p)">Pizzaria</span> Folhari</h2>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="setor(event, 's-pedido')">Pedido</button>
+        <button class="tab-btn" onclick="setor(event, 's-pizzas')">Pizzas</button>
+        <button class="tab-btn" onclick="setor(event, 's-bordas')">Bordas</button>
+        <button class="tab-btn" onclick="setor(event, 's-refris')">Bebidas</button>
+        <button class="tab-btn" onclick="setor(event, 's-entregas')">Taxas</button>
+    </div>
 
     <div id="s-pedido" class="content active">
-        <div class="grid">
-            <div>
-                <h3>1. ITENS</h3>
-                <input list="list-p" id="p-comando" placeholder="EX: 2X CALABRESA, MUSSARELA">
-                <select id="p-borda"><option value="">SELECIONAR BORDA</option></select>
-                <select id="p-refri"><option value="">SELECIONAR BEBIDA</option></select>
-            </div>
-            <div>
-                <h3>2. CLIENTE / TIPO</h3>
-                <input type="text" id="ent-cliente" placeholder="NOME DO CLIENTE">
-                <select id="p-tipo" onchange="toggleEntrega()">
-                    <option value="entrega">🚀 ENTREGA (DELIVERY)</option>
-                    <option value="local">🏠 RETIRADA / BALCÃO</option>
-                </select>
-                <div id="area-bairro">
-                    <select id="p-taxa-bairro"><option value="">ESCOLHER BAIRRO (TAXA)</option></select>
-                </div>
-            </div>
-        </div>
-        <button class="btn btn-add" onclick="lancarPedido()">FINALIZAR PEDIDO</button>
-        <div style="margin-top: 30px;">
-            <h3>📋 PEDIDOS ATIVOS</h3>
-            <div id="lista-pedidos"></div>
-        </div>
+        <input list="list-p" id="item_pizza" placeholder="Pizza (ex: 2x Calabresa)" oninput="atualizarBordas(); calcularTotal()" autocomplete="off" spellcheck="false">
+        <div id="container-bordas"></div>
+        <input list="list-r" id="item_refri" placeholder="Bebidas..." oninput="calcularTotal()" autocomplete="off" spellcheck="false">
+        <input type="text" id="id_cliente" placeholder="Nome do Cliente" autocomplete="off" spellcheck="false">
+        <select id="p-tipo" onchange="toggleEntrega(); calcularTotal()">
+            <option value="entrega">🚀 Entrega</option>
+            <option value="local">🏠 Balcão</option>
+        </select>
+        <div id="area-bairro"><select id="p-taxa-bairro" onchange="calcularTotal()"></select></div>
+        <textarea id="p-obs" rows="2" placeholder="Observações..."></textarea>
+        <button class="btn btn-p" onclick="lancarPedido()">🔥 Finalizar Pedido</button>
+        <div id="lista-pedidos" style="margin-top:20px"></div>
     </div>
 
     <div id="s-pizzas" class="content">
-        <h3>CADASTRAR PIZZAS</h3>
-        <div class="grid">
-            <div><input id="cp-n" placeholder="NOME DA PIZZA"><input type="number" id="cp-v" placeholder="PREÇO R$"><button class="btn btn-salvar" onclick="cad('pizzas')">SALVAR NO CARDÁPIO</button></div>
-            <div><table id="t-pizzas"><thead><tr><th>PIZZA</th><th>PREÇO</th><th></th></tr></thead><tbody></tbody></table></div>
-        </div>
+        <input id="cp-n" placeholder="Sabor" autocomplete="off"><input type="number" id="cp-v" placeholder="Preço R$">
+        <button class="btn btn-p" onclick="cad('pizzas', 'cp-n', 'cp-v')">Salvar Pizza</button>
+        <div id="t-pizzas"></div>
     </div>
-
     <div id="s-bordas" class="content">
-        <h3>CADASTRAR BORDAS</h3>
-        <div class="grid">
-            <div><input id="cb-n" placeholder="TIPO DE BORDA"><input type="number" id="cb-v" placeholder="PREÇO R$"><button class="btn btn-salvar" onclick="cad('bordas')">SALVAR NO CARDÁPIO</button></div>
-            <div><table id="t-bordas"><thead><tr><th>BORDA</th><th>PREÇO</th><th></th></tr></thead><tbody></tbody></table></div>
-        </div>
+        <input id="cb-n" placeholder="Borda" autocomplete="off"><input type="number" id="cb-v" placeholder="Preço R$">
+        <button class="btn btn-p" onclick="cad('bordas', 'cb-n', 'cb-v')">Salvar Borda</button>
+        <div id="t-bordas"></div>
     </div>
-
     <div id="s-refris" class="content">
-        <h3>CADASTRAR BEBIDAS</h3>
-        <div class="grid">
-            <div><input id="cr-n" placeholder="NOME DA BEBIDA"><input type="number" id="cr-v" placeholder="PREÇO R$"><button class="btn btn-salvar" onclick="cad('refris')">SALVAR NO CARDÁPIO</button></div>
-            <div><table id="t-refris"><thead><tr><th>BEBIDA</th><th>PREÇO</th><th></th></tr></thead><tbody></tbody></table></div>
-        </div>
+        <input id="cr-n" placeholder="Bebida" autocomplete="off"><input type="number" id="cr-v" placeholder="Preço R$">
+        <button class="btn btn-p" onclick="cad('refris', 'cr-n', 'cr-v')">Salvar Bebida</button>
+        <div id="t-refris"></div>
     </div>
-
     <div id="s-entregas" class="content">
-        <h3>CADASTRAR BAIRROS / TAXAS</h3>
-        <div class="grid">
-            <div><input id="ce-n" placeholder="NOME DO BAIRRO"><input type="number" id="ce-v" placeholder="VALOR TAXA R$"><button class="btn btn-salvar" onclick="cad('entregas')">SALVAR NO CARDÁPIO</button></div>
-            <div><table id="t-entregas"><thead><tr><th>BAIRRO</th><th>TAXA</th><th></th></tr></thead><tbody></tbody></table></div>
-        </div>
+        <input id="ce-n" placeholder="Bairro" autocomplete="off"><input type="number" id="ce-v" placeholder="Taxa R$">
+        <button class="btn btn-p" onclick="cad('entregas', 'ce-n', 'ce-v')">Salvar Taxa</button>
+        <div id="t-entregas"></div>
     </div>
 </div>
 
+<div class="footer-total">
+    <div style="color:var(--sub); font-weight:bold;">TOTAL</div>
+    <div class="total-price" id="display-total">R$ 0,00</div>
+</div>
+
 <datalist id="list-p"></datalist>
+<datalist id="list-r"></datalist>
 
 <script>
-    // ESTA LINHA ABAIXO É A QUE MANTÉM TUDO SALVO
-    let db = JSON.parse(localStorage.getItem('pizzaria_total_v10')) || { pizzas: {}, bordas: {}, refris: {}, entregas: {} };
+    const firebaseConfig = {
+      apiKey: "AIzaSyALFZuwmpJkx-17PLTuxjWe_DnMpcLTkVM",
+      authDomain: "gerador-15f2b.firebaseapp.com",
+      databaseURL: "https://gerador-15f2b-default-rtdb.firebaseio.com",
+      projectId: "gerador-15f2b",
+      storageBucket: "gerador-15f2b.firebasestorage.app",
+      messagingSenderId: "726615434458",
+      appId: "1:726615434458:web:75eb6098391ec431b3f1e3"
+    };
 
-    window.onload = () => atualizarListas();
+    firebase.initializeApp(firebaseConfig);
+    const rdb = firebase.database();
+    let db = { pizzas: {}, bordas: {}, refris: {}, entregas: {} };
+
+    // Sincronização constante
+    rdb.ref('pizzaria_folhari_final').on('value', snap => {
+        const dados = snap.val();
+        db = {
+            pizzas: (dados && dados.pizzas) ? dados.pizzas : {},
+            bordas: (dados && dados.bordas) ? dados.bordas : {},
+            refris: (dados && dados.refris) ? dados.refris : {},
+            entregas: (dados && dados.entregas) ? dados.entregas : {}
+        };
+        atualizarListas();
+        calcularTotal();
+    });
+
+    function salvar() { rdb.ref('pizzaria_folhari_final').set(db); }
+
+    function cad(categoria, idNome, idValor) {
+        const nome = document.getElementById(idNome).value.trim();
+        const valor = parseFloat(document.getElementById(idValor).value);
+        if(!nome || isNaN(valor)) return alert("Preencha nome e valor corretamente!");
+        
+        db[categoria][nome] = valor;
+        salvar();
+        
+        document.getElementById(idNome).value = '';
+        document.getElementById(idValor).value = '';
+    }
+
+    function apagar(cat, item) {
+        if(confirm(`Excluir ${item}?`)) {
+            delete db[cat][item];
+            salvar();
+        }
+    }
+
+    function atualizarListas() {
+        const categorias = ['pizzas', 'bordas', 'refris', 'entregas'];
+        categorias.forEach(cat => {
+            const container = document.getElementById(`t-${cat}`);
+            const dl = (cat === 'pizzas') ? document.getElementById('list-p') : (cat === 'refris' ? document.getElementById('list-r') : null);
+            
+            if(container) container.innerHTML = '';
+            if(dl) dl.innerHTML = '';
+            if(cat === 'entregas') document.getElementById('p-taxa-bairro').innerHTML = '<option value="">Bairro...</option>';
+
+            for(let item in db[cat]) {
+                if(container) container.innerHTML += `<div class="card-item"><span>${item} (R$ ${db[cat][item].toFixed(2)})</span><span style="color:var(--p); font-weight:bold; cursor:pointer;" onclick="apagar('${cat}','${item}')">✕</span></div>`;
+                if(dl) dl.innerHTML += `<option value="${item}">`;
+                if(cat === 'entregas') document.getElementById('p-taxa-bairro').innerHTML += `<option value="${item}">${item}</option>`;
+            }
+        });
+    }
+
+    function calcularTotal() {
+        const pCmd = document.getElementById('item_pizza').value;
+        const rCmd = document.getElementById('item_refri').value;
+        const tipo = document.getElementById('p-tipo').value;
+        const bSel = document.querySelectorAll('.sel-borda-unidade');
+        let total = 0; let idxB = 0;
+
+        pCmd.split(',').forEach(p => {
+            let t = p.trim(); if(!t) return;
+            let q = 1; let n = t;
+            const m = t.match(/^(\d+)\s*[xX]\s*(.*)/);
+            if(m) { q = parseInt(m[1]); n = m[2].trim(); }
+            let pReal = Object.keys(db.pizzas).find(k => k.toLowerCase() === n.toLowerCase());
+            if(pReal) {
+                for(let i = 0; i < q; i++) {
+                    total += db.pizzas[pReal];
+                    if(bSel[idxB] && bSel[idxB].value) total += db.bordas[bSel[idxB].value];
+                    idxB++;
+                }
+            }
+        });
+
+        if(rCmd) {
+            rCmd.split(',').forEach(r => {
+                let t = r.trim(); if(!t) return;
+                let q = 1; let n = t;
+                const m = t.match(/^(\d+)\s*[xX]\s*(.*)/);
+                if(m) { q = parseInt(m[1]); n = m[2].trim(); }
+                let rReal = Object.keys(db.refris).find(k => k.toLowerCase() === n.toLowerCase());
+                if(rReal) total += (db.refris[rReal] * q);
+            });
+        }
+
+        if(tipo === 'entrega') {
+            const b = document.getElementById('p-taxa-bairro').value;
+            total += (db.entregas[b]) ? db.entregas[b] : 0;
+        }
+
+        document.getElementById('display-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+    }
+
+    function atualizarBordas() {
+        const cmd = document.getElementById('item_pizza').value;
+        const container = document.getElementById('container-bordas');
+        container.innerHTML = "";
+        const partes = cmd.split(',');
+        let html = '<div class="borda-box"><strong>Bordas:</strong>';
+        let tem = false;
+
+        partes.forEach(p => {
+            let t = p.trim(); if(!t) return;
+            let q = 1; let n = t;
+            const m = t.match(/^(\d+)\s*[xX]\s*(.*)/);
+            if(m) { q = parseInt(m[1]); n = m[2].trim(); }
+            let pReal = Object.keys(db.pizzas).find(k => k.toLowerCase() === n.toLowerCase());
+            if(pReal) {
+                tem = true;
+                for(let i = 1; i <= q; i++) {
+                    html += `<div style="margin:5px 0;">${pReal} #${i}: <select class="sel-borda-unidade" onchange="calcularTotal()"><option value="">Sem Borda</option>${Object.keys(db.bordas).map(b => `<option value="${b}">${b}</option>`).join('')}</select></div>`;
+                }
+            }
+        });
+        if(tem) container.innerHTML = html + '</div>';
+    }
+
+    function lancarPedido() {
+        const pCmd = document.getElementById('item_pizza').value;
+        const rCmd = document.getElementById('item_refri').value;
+        const cli = document.getElementById('id_cliente').value || "Não informado";
+        const tipo = document.getElementById('p-tipo').value;
+        const bSel = document.querySelectorAll('.sel-borda-unidade');
+        const obs = document.getElementById('p-obs').value;
+        let total = 0; let res = `*🍕 PIZZARIA FOLHARI*\n\n`;
+        let idxB = 0;
+
+        pCmd.split(',').forEach(p => {
+            let t = p.trim(); if(!t) return;
+            let q = 1; let n = t;
+            const m = t.match(/^(\d+)\s*[xX]\s*(.*)/);
+            if(m) { q = parseInt(m[1]); n = m[2].trim(); }
+            let pReal = Object.keys(db.pizzas).find(k => k.toLowerCase() === n.toLowerCase());
+            if(pReal) {
+                for(let i = 0; i < q; i++) {
+                    let v = db.pizzas[pReal]; let bTxt = "";
+                    if(bSel[idxB] && bSel[idxB].value) { v += db.bordas[bSel[idxB].value]; bTxt = ` (Borda: ${bSel[idxB].value})`; }
+                    total += v; res += `• 1x ${pReal}${bTxt} - R$ ${v.toFixed(2)}\n`; idxB++;
+                }
+            }
+        });
+
+        if(rCmd) {
+            res += `\n*🥤 BEBIDAS:*\n`;
+            rCmd.split(',').forEach(r => {
+                let t = r.trim(); if(!t) return;
+                let q = 1; let n = t;
+                const m = t.match(/^(\d+)\s*[xX]\s*(.*)/);
+                if(m) { q = parseInt(m[1]); n = m[2].trim(); }
+                let rReal = Object.keys(db.refris).find(k => k.toLowerCase() === n.toLowerCase());
+                if(rReal) { let v = db.refris[rReal] * q; total += v; res += `• ${q}x ${rReal} - R$ ${v.toFixed(2)}\n`; }
+            });
+        }
+
+        if(tipo === 'entrega') {
+            const b = document.getElementById('p-taxa-bairro').value;
+            const tx = db.entregas[b] || 0;
+            total += tx; res += `\n🛵 *Entrega:* ${b} (R$ ${tx.toFixed(2)})`;
+        } else { res += `\n🏠 *Retirada*`; }
+
+        if(obs) res += `\n\n📝 *Obs:* ${obs}`;
+        res += `\n\n👤 *Cliente:* ${cli}\n💰 *TOTAL: R$ ${total.toFixed(2)}*`;
+
+        const card = document.createElement('div'); card.className = 'card-item'; card.style.display = 'block';
+        card.innerHTML = `<pre>${res}</pre><button class="btn btn-zap" onclick="window.open('https://api.whatsapp.com/send?text=${window.encodeURIComponent(res)}')">Enviar WhatsApp</button>`;
+        document.getElementById('lista-pedidos').prepend(card);
+    }
 
     function setor(e, id) {
         document.querySelectorAll('.content').forEach(c => c.style.display = 'none');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(id).style.display = 'block';
-        if(e) e.currentTarget.classList.add('active');
+        e.currentTarget.classList.add('active');
     }
-
-    function toggleEntrega() {
-        document.getElementById('area-bairro').style.display = document.getElementById('p-tipo').value === 'local' ? 'none' : 'block';
-    }
-
-    function cad(setor) {
-        let pfx = setor[0];
-        const n = document.getElementById(`c${pfx}-n`).value.trim().toUpperCase();
-        const v = parseFloat(document.getElementById(`c${pfx}-v`).value);
-        if(!n || isNaN(v)) return;
-
-        db[setor][n] = v;
-        // SALVA NO NAVEGADOR
-        localStorage.setItem('pizzaria_total_v10', JSON.stringify(db));
-        
-        atualizarListas();
-        document.getElementById(`c${pfx}-n`).value = '';
-        document.getElementById(`c${pfx}-v`).value = '';
-    }
-
-    function apagar(setor, nome) {
-        if(confirm("DESEJA REMOVER " + nome + " DO CARDÁPIO?")) {
-            delete db[setor][nome];
-            localStorage.setItem('pizzaria_total_v10', JSON.stringify(db));
-            atualizarListas();
-        }
-    }
-
-    function atualizarListas() {
-        const tipos = ['pizzas', 'bordas', 'refris', 'entregas'];
-        tipos.forEach(t => {
-            const tb = document.querySelector(`#t-${t} tbody`);
-            if(!tb) return;
-            tb.innerHTML = '';
-            
-            if(t === 'pizzas') document.getElementById('list-p').innerHTML = '';
-            else if(t === 'entregas') document.getElementById('p-taxa-bairro').innerHTML = '<option value="">ESCOLHER BAIRRO</option>';
-            else document.getElementById(`p-${t.slice(0,-1)}`).innerHTML = `<option value="">SELECIONAR ${t.slice(0,-1).toUpperCase()}</option>`;
-
-            // Organiza por ordem alfabética para facilitar
-            const itensOrdenados = Object.keys(db[t]).sort();
-
-            itensOrdenados.forEach(item => {
-                tb.innerHTML += `<tr><td>${item}</td><td>R$ ${db[t][item].toFixed(2)}</td><td class="excluir" onclick="apagar('${t}', '${item}')">✖</td></tr>`;
-                
-                if(t === 'pizzas') document.getElementById('list-p').innerHTML += `<option value="${item}">`;
-                else if(t === 'entregas') document.getElementById('p-taxa-bairro').innerHTML += `<option value="${item}">${item} (R$ ${db[t][item].toFixed(2)})</option>`;
-                else document.getElementById(`p-${t.slice(0,-1)}`).innerHTML += `<option value="${item}">${item} (+R$ ${db[t][item].toFixed(2)})</option>`;
-            });
-        });
-    }
-
-    function lancarPedido() {
-        const cmdRaw = document.getElementById('p-comando').value.toUpperCase();
-        const cliente = document.getElementById('ent-cliente').value.toUpperCase() || "NÃO INFORMADO";
-        if(!cmdRaw) return alert("ADICIONE ITENS AO PEDIDO!");
-
-        let totalGeral = 0;
-        let resumoTxt = "";
-        const partes = cmdRaw.split(',');
-
-        partes.forEach(p => {
-            let texto = p.trim();
-            if(!texto) return;
-
-            let qtd = 1;
-            let busca = texto;
-
-            const match = texto.match(/^(\d+)\s*[xX]\s*(.*)/);
-            if(match) {
-                qtd = parseInt(match[1]);
-                busca = match[2].trim();
-            }
-
-            if(db.pizzas[busca]) {
-                let sub = db.pizzas[busca] * qtd;
-                totalGeral += sub;
-                resumoTxt += `• ${qtd}X ${busca} (R$ ${sub.toFixed(2)})\n`;
-            } else {
-                alert("AVISO: A PIZZA '" + busca + "' NÃO FOI ENCONTRADA NO CARDÁPIO!");
-            }
-        });
-
-        if(totalGeral === 0) return;
-
-        const b = document.getElementById('p-borda').value;
-        const r = document.getElementById('p-refri').value;
-        if(b) { totalGeral += db.bordas[b]; resumoTxt += `+ BORDA: ${b} (R$ ${db.bordas[b].toFixed(2)})\n`; }
-        if(r) { totalGeral += db.refris[r]; resumoTxt += `+ BEBIDA: ${r} (R$ ${db.refris[r].toFixed(2)})\n`; }
-
-        const tipo = document.getElementById('p-tipo').value;
-        let infoEnt = "";
-        if(tipo === 'entrega') {
-            const bairro = document.getElementById('p-taxa-bairro').value;
-            const taxa = db.entregas[bairro] || 0;
-            totalGeral += taxa;
-            infoEnt = `\n👤 CLIENTE: ${cliente}\n🛵 BAIRRO: ${bairro || 'NÃO SELECIONADO'} (R$ ${taxa.toFixed(2)})`;
-        } else {
-            infoEnt = `\n👤 CLIENTE: ${cliente}\n🏠 *BALCÃO / RETIRADA*`;
-        }
-
-        const textoZap = window.encodeURIComponent(`*PEDIDO PIZZARIA*\n\n${resumoTxt}${infoEnt}\n\n*TOTAL: R$ ${totalGeral.toFixed(2)}*`);
-
-        const card = document.createElement('div');
-        card.className = `card-pedido ${tipo === 'entrega' ? 'card-entrega' : ''}`;
-        card.innerHTML = `
-            <button class="btn-fechar" onclick="this.parentElement.remove()">X</button>
-            <strong>PEDIDO - ${new Date().toLocaleTimeString()}</strong>
-            <pre>${resumoTxt}${infoEnt.replace(/\n/g, '<br>')}</pre>
-            <div style="font-size:1.4em; color:var(--p)"><b>TOTAL: R$ ${totalGeral.toFixed(2)}</b></div>
-            <button class="btn btn-whatsapp" onclick="window.open('https://api.whatsapp.com/send?text=${textoZap}')">📲 WHATSAPP</button>
-        `;
-        document.getElementById('lista-pedidos').prepend(card);
-        document.getElementById('p-comando').value = '';
-        document.getElementById('ent-cliente').value = '';
-    }
+    function toggleEntrega() { document.getElementById('area-bairro').style.display = document.getElementById('p-tipo').value === 'local' ? 'none' : 'block'; }
 </script>
 </body>
-</html>
+        </html>
+                                                                    
