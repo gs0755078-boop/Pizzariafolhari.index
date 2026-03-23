@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SISTEMA PIZZARIA - DADOS SALVOS</title>
+    <style>
+        :root { --p: #e63946; --s: #1d3557; --g: #2a9d8f; --e: #f4a261; --w: #25d366; }
+        body { font-family: 'Segoe UI', sans-serif; background: #cbd5e0; margin: 0; padding: 10px; }
+        .main { max-width: 800px; margin: auto; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; }
+        
+        .tabs { display: flex; background: var(--s); border-bottom: 4px solid var(--p); overflow-x: auto; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: white; cursor: pointer; font-weight: bold; white-space: nowrap; text-transform: uppercase; }
+        .tab-btn.active { background: var(--p); }
+
+        .content { padding: 20px; display: none; }
+        .content.active { display: block; }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+
+        input, select { 
+            width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; 
+            box-sizing: border-box; font-size: 16px; text-transform: uppercase; 
+        }
+        
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; text-transform: uppercase; }
+        .btn-add { background: var(--g); font-size: 1.1em; }
+        .btn-salvar { background: var(--s); }
+        .btn-whatsapp { background: var(--w); margin-top: 10px; }
+
+        .card-pedido { background: white; border: 1px solid #ddd; border-left: 10px solid var(--g); padding: 15px; margin-bottom: 15px; border-radius: 8px; position: relative; text-transform: uppercase; }
+        .card-entrega { border-left-color: var(--e); background: #fffcf0; }
+        .btn-fechar { position: absolute; right: 10px; top: 10px; background: #ff5c5c; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; text-transform: uppercase; }
+        table td, table th { padding: 10px; border: 1px solid #eee; text-align: left; }
+        .excluir { color: var(--p); cursor: pointer; font-weight: bold; text-align: center; }
+        pre { white-space: pre-wrap; font-family: inherit; margin: 0; }
+        h3 { text-transform: uppercase; margin-top: 0; color: var(--s); }
+    </style>
+</head>
+<body>
+
+<div class="main">
+    <nav class="tabs">
+        <button class="tab-btn active" onclick="setor(event, 's-pedido')">🛒 PEDIDO</button>
+        <button class="tab-btn" onclick="setor(event, 's-pizzas')">🍕 PIZZAS</button>
+        <button class="tab-btn" onclick="setor(event, 's-bordas')">➿ BORDAS</button>
+        <button class="tab-btn" onclick="setor(event, 's-refris')">🥤 REFRIS</button>
+        <button class="tab-btn" onclick="setor(event, 's-entregas')">🚀 ENTREGAS</button>
+    </nav>
+
+    <div id="s-pedido" class="content active">
+        <div class="grid">
+            <div>
+                <h3>1. ITENS</h3>
+                <input list="list-p" id="p-comando" placeholder="EX: 2X CALABRESA, MUSSARELA">
+                <select id="p-borda"><option value="">SELECIONAR BORDA</option></select>
+                <select id="p-refri"><option value="">SELECIONAR BEBIDA</option></select>
+            </div>
+            <div>
+                <h3>2. CLIENTE / TIPO</h3>
+                <input type="text" id="ent-cliente" placeholder="NOME DO CLIENTE">
+                <select id="p-tipo" onchange="toggleEntrega()">
+                    <option value="entrega">🚀 ENTREGA (DELIVERY)</option>
+                    <option value="local">🏠 RETIRADA / BALCÃO</option>
+                </select>
+                <div id="area-bairro">
+                    <select id="p-taxa-bairro"><option value="">ESCOLHER BAIRRO (TAXA)</option></select>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-add" onclick="lancarPedido()">FINALIZAR PEDIDO</button>
+        <div style="margin-top: 30px;">
+            <h3>📋 PEDIDOS ATIVOS</h3>
+            <div id="lista-pedidos"></div>
+        </div>
+    </div>
+
+    <div id="s-pizzas" class="content">
+        <h3>CADASTRAR PIZZAS</h3>
+        <div class="grid">
+            <div><input id="cp-n" placeholder="NOME DA PIZZA"><input type="number" id="cp-v" placeholder="PREÇO R$"><button class="btn btn-salvar" onclick="cad('pizzas')">SALVAR NO CARDÁPIO</button></div>
+            <div><table id="t-pizzas"><thead><tr><th>PIZZA</th><th>PREÇO</th><th></th></tr></thead><tbody></tbody></table></div>
+        </div>
+    </div>
+
+    <div id="s-bordas" class="content">
+        <h3>CADASTRAR BORDAS</h3>
+        <div class="grid">
+            <div><input id="cb-n" placeholder="TIPO DE BORDA"><input type="number" id="cb-v" placeholder="PREÇO R$"><button class="btn btn-salvar" onclick="cad('bordas')">SALVAR NO CARDÁPIO</button></div>
+            <div><table id="t-bordas"><thead><tr><th>BORDA</th><th>PREÇO</th><th></th></tr></thead><tbody></tbody></table></div>
+        </div>
+    </div>
+
+    <div id="s-refris" class="content">
+        <h3>CADASTRAR BEBIDAS</h3>
+        <div class="grid">
+            <div><input id="cr-n" placeholder="NOME DA BEBIDA"><input type="number" id="cr-v" placeholder="PREÇO R$"><button class="btn btn-salvar" onclick="cad('refris')">SALVAR NO CARDÁPIO</button></div>
+            <div><table id="t-refris"><thead><tr><th>BEBIDA</th><th>PREÇO</th><th></th></tr></thead><tbody></tbody></table></div>
+        </div>
+    </div>
+
+    <div id="s-entregas" class="content">
+        <h3>CADASTRAR BAIRROS / TAXAS</h3>
+        <div class="grid">
+            <div><input id="ce-n" placeholder="NOME DO BAIRRO"><input type="number" id="ce-v" placeholder="VALOR TAXA R$"><button class="btn btn-salvar" onclick="cad('entregas')">SALVAR NO CARDÁPIO</button></div>
+            <div><table id="t-entregas"><thead><tr><th>BAIRRO</th><th>TAXA</th><th></th></tr></thead><tbody></tbody></table></div>
+        </div>
+    </div>
+</div>
+
+<datalist id="list-p"></datalist>
+
+<script>
+    // ESTA LINHA ABAIXO É A QUE MANTÉM TUDO SALVO
+    let db = JSON.parse(localStorage.getItem('pizzaria_total_v10')) || { pizzas: {}, bordas: {}, refris: {}, entregas: {} };
+
+    window.onload = () => atualizarListas();
+
+    function setor(e, id) {
+        document.querySelectorAll('.content').forEach(c => c.style.display = 'none');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).style.display = 'block';
+        if(e) e.currentTarget.classList.add('active');
+    }
+
+    function toggleEntrega() {
+        document.getElementById('area-bairro').style.display = document.getElementById('p-tipo').value === 'local' ? 'none' : 'block';
+    }
+
+    function cad(setor) {
+        let pfx = setor[0];
+        const n = document.getElementById(`c${pfx}-n`).value.trim().toUpperCase();
+        const v = parseFloat(document.getElementById(`c${pfx}-v`).value);
+        if(!n || isNaN(v)) return;
+
+        db[setor][n] = v;
+        // SALVA NO NAVEGADOR
+        localStorage.setItem('pizzaria_total_v10', JSON.stringify(db));
+        
+        atualizarListas();
+        document.getElementById(`c${pfx}-n`).value = '';
+        document.getElementById(`c${pfx}-v`).value = '';
+    }
+
+    function apagar(setor, nome) {
+        if(confirm("DESEJA REMOVER " + nome + " DO CARDÁPIO?")) {
+            delete db[setor][nome];
+            localStorage.setItem('pizzaria_total_v10', JSON.stringify(db));
+            atualizarListas();
+        }
+    }
+
+    function atualizarListas() {
+        const tipos = ['pizzas', 'bordas', 'refris', 'entregas'];
+        tipos.forEach(t => {
+            const tb = document.querySelector(`#t-${t} tbody`);
+            if(!tb) return;
+            tb.innerHTML = '';
+            
+            if(t === 'pizzas') document.getElementById('list-p').innerHTML = '';
+            else if(t === 'entregas') document.getElementById('p-taxa-bairro').innerHTML = '<option value="">ESCOLHER BAIRRO</option>';
+            else document.getElementById(`p-${t.slice(0,-1)}`).innerHTML = `<option value="">SELECIONAR ${t.slice(0,-1).toUpperCase()}</option>`;
+
+            // Organiza por ordem alfabética para facilitar
+            const itensOrdenados = Object.keys(db[t]).sort();
+
+            itensOrdenados.forEach(item => {
+                tb.innerHTML += `<tr><td>${item}</td><td>R$ ${db[t][item].toFixed(2)}</td><td class="excluir" onclick="apagar('${t}', '${item}')">✖</td></tr>`;
+                
+                if(t === 'pizzas') document.getElementById('list-p').innerHTML += `<option value="${item}">`;
+                else if(t === 'entregas') document.getElementById('p-taxa-bairro').innerHTML += `<option value="${item}">${item} (R$ ${db[t][item].toFixed(2)})</option>`;
+                else document.getElementById(`p-${t.slice(0,-1)}`).innerHTML += `<option value="${item}">${item} (+R$ ${db[t][item].toFixed(2)})</option>`;
+            });
+        });
+    }
+
+    function lancarPedido() {
+        const cmdRaw = document.getElementById('p-comando').value.toUpperCase();
+        const cliente = document.getElementById('ent-cliente').value.toUpperCase() || "NÃO INFORMADO";
+        if(!cmdRaw) return alert("ADICIONE ITENS AO PEDIDO!");
+
+        let totalGeral = 0;
+        let resumoTxt = "";
+        const partes = cmdRaw.split(',');
+
+        partes.forEach(p => {
+            let texto = p.trim();
+            if(!texto) return;
+
+            let qtd = 1;
+            let busca = texto;
+
+            const match = texto.match(/^(\d+)\s*[xX]\s*(.*)/);
+            if(match) {
+                qtd = parseInt(match[1]);
+                busca = match[2].trim();
+            }
+
+            if(db.pizzas[busca]) {
+                let sub = db.pizzas[busca] * qtd;
+                totalGeral += sub;
+                resumoTxt += `• ${qtd}X ${busca} (R$ ${sub.toFixed(2)})\n`;
+            } else {
+                alert("AVISO: A PIZZA '" + busca + "' NÃO FOI ENCONTRADA NO CARDÁPIO!");
+            }
+        });
+
+        if(totalGeral === 0) return;
+
+        const b = document.getElementById('p-borda').value;
+        const r = document.getElementById('p-refri').value;
+        if(b) { totalGeral += db.bordas[b]; resumoTxt += `+ BORDA: ${b} (R$ ${db.bordas[b].toFixed(2)})\n`; }
+        if(r) { totalGeral += db.refris[r]; resumoTxt += `+ BEBIDA: ${r} (R$ ${db.refris[r].toFixed(2)})\n`; }
+
+        const tipo = document.getElementById('p-tipo').value;
+        let infoEnt = "";
+        if(tipo === 'entrega') {
+            const bairro = document.getElementById('p-taxa-bairro').value;
+            const taxa = db.entregas[bairro] || 0;
+            totalGeral += taxa;
+            infoEnt = `\n👤 CLIENTE: ${cliente}\n🛵 BAIRRO: ${bairro || 'NÃO SELECIONADO'} (R$ ${taxa.toFixed(2)})`;
+        } else {
+            infoEnt = `\n👤 CLIENTE: ${cliente}\n🏠 *BALCÃO / RETIRADA*`;
+        }
+
+        const textoZap = window.encodeURIComponent(`*PEDIDO PIZZARIA*\n\n${resumoTxt}${infoEnt}\n\n*TOTAL: R$ ${totalGeral.toFixed(2)}*`);
+
+        const card = document.createElement('div');
+        card.className = `card-pedido ${tipo === 'entrega' ? 'card-entrega' : ''}`;
+        card.innerHTML = `
+            <button class="btn-fechar" onclick="this.parentElement.remove()">X</button>
+            <strong>PEDIDO - ${new Date().toLocaleTimeString()}</strong>
+            <pre>${resumoTxt}${infoEnt.replace(/\n/g, '<br>')}</pre>
+            <div style="font-size:1.4em; color:var(--p)"><b>TOTAL: R$ ${totalGeral.toFixed(2)}</b></div>
+            <button class="btn btn-whatsapp" onclick="window.open('https://api.whatsapp.com/send?text=${textoZap}')">📲 WHATSAPP</button>
+        `;
+        document.getElementById('lista-pedidos').prepend(card);
+        document.getElementById('p-comando').value = '';
+        document.getElementById('ent-cliente').value = '';
+    }
+</script>
+</body>
+</html>
