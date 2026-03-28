@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FOLHARI VIVENZA </title>
+    <title>FOLHARI VIVENZA - PDV</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -31,15 +31,17 @@
         .btn-print { background: #4a5568; color: white; margin-top: 10px; }
         .btn-zap { background: var(--w); color: white; margin-top: 5px; }
 
-        .footer-total { position: fixed; bottom: 0; left: 0; right: 0; background: #161d29; padding: 15px 20px; border-top: 3px solid var(--p); display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
-        .total-price { color: var(--p); font-size: 22px; font-weight: bold; }
-        
         pre { white-space: pre-wrap; font-family: 'Courier New', monospace; margin: 0; font-size: 13px; line-height: 1.4; color: #cbd5e0; }
 
+        .footer-total { position: fixed; bottom: 0; left: 0; right: 0; background: #161d29; padding: 15px 20px; border-top: 3px solid var(--p); display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
+        .total-price { color: var(--p); font-size: 22px; font-weight: bold; }
+
         @media print {
+            @page { margin: 0; }
             body * { visibility: hidden; }
             #secao-impressao, #secao-impressao * { visibility: visible; }
             #secao-impressao { position: absolute; left: 0; top: 0; width: 100%; color: black !important; }
+            pre { color: black !important; font-size: 14px; font-weight: bold; }
         }
     </style>
 </head>
@@ -57,7 +59,7 @@
     </div>
 
     <div id="s-pedido" class="content active">
-        <input list="list-p" id="item_pizza" placeholder="Pizza (ex: 1x meia calabresa meia mussarela)" oninput="atualizarBordas(); calcularTotal()">
+        <input list="list-p" id="item_pizza" placeholder="Pizza (ex: 1x calabresa)" oninput="atualizarBordas(); calcularTotal()">
         <div id="container-bordas"></div>
         <input list="list-l" id="item_lanche" placeholder="Lanches..." oninput="calcularTotal()">
         <input list="list-r" id="item_refri" placeholder="Bebidas..." oninput="calcularTotal()">
@@ -103,7 +105,6 @@
         <input id="ce-n" placeholder="Bairro"><input type="number" id="ce-v" placeholder="R$"><button class="btn btn-p" onclick="cad('entregas', 'ce-n', 'ce-v')">SALVAR</button>
         <div id="t-entregas"></div>
     </div>
-
 </div>
 
 <div class="footer-total">
@@ -111,7 +112,7 @@
     <div class="total-price" id="display-total">R$ 0,00</div>
 </div>
 
-<div id="secao-impressao" style="display:none; font-family:'Courier New', Courier, monospace; width: 300px; padding: 10px; color: black;"></div>
+<div id="secao-impressao" style="display:none; font-family:'Courier New', monospace; width: 300px; padding: 10px; color: black; text-align: left;"></div>
 
 <datalist id="list-p"></datalist><datalist id="list-l"></datalist><datalist id="list-r"></datalist>
 
@@ -130,13 +131,13 @@
     const rdb = firebase.database();
     let db = { pizzas: {}, lanches: {}, bordas: {}, refris: {}, entregas: {}, pedidos: {} };
 
-    rdb.ref('folhari_v14_vivenza').on('value', snap => {
+    rdb.ref('folhari_v15_print').on('value', snap => {
         const d = snap.val() || {};
         db = { pizzas: d.pizzas || {}, lanches: d.lanches || {}, bordas: d.bordas || {}, refris: d.refris || {}, entregas: d.entregas || {}, pedidos: d.pedidos || {} };
         atualizarListas(); exibirPedidos(); calcularTotal();
     });
 
-    function salvar() { rdb.ref('folhari_v14_vivenza').update(db); }
+    function salvar() { rdb.ref('folhari_v15_print').update(db); }
 
     function resolverPrecoPizza(texto) {
         let t = texto.toLowerCase().replace(/meia/g, '').trim();
@@ -192,9 +193,8 @@
         const cli = document.getElementById('id_cliente').value || "Cliente";
         const tipo = document.getElementById('p-tipo').value;
         const obs = document.getElementById('p-obs').value;
-        const data = new Date().toLocaleString();
+        const data = new Date().toLocaleString('pt-BR');
 
-        // NOME ALTERADO NO CUPOM DE IMPRESSÃO
         let res = `--------------------------------\n`;
         res += `        FOLHARI VIVENZA\n`;
         res += `   ${data}\n`;
@@ -245,7 +245,7 @@
 
     function imprimirCupom(texto) {
         const div = document.getElementById('secao-impressao');
-        div.innerHTML = `<pre style="color:black; font-weight:bold;">${texto}</pre>`;
+        div.innerHTML = `<pre>${texto}</pre>`;
         div.style.display = 'block';
         window.print();
         div.style.display = 'none';
@@ -263,14 +263,14 @@
         document.getElementById('total-dia').innerText = `R$ ${totalD.toFixed(2).replace('.', ',')}`;
     }
 
-    // FUNÇÕES DE CADASTRO E SISTEMA (SETORES, BORDAS, TAXAS)
-    function apagarPedido(id) { if(confirm("Excluir?")) { delete db.pedidos[id]; rdb.ref('folhari_v14_vivenza/pedidos').set(db.pedidos || {}); } }
-    function limparHistorico() { if(confirm("ZERAR CAIXA?")) { db.pedidos = {}; rdb.ref('folhari_v14_vivenza/pedidos').set({}); } }
+    function apagarPedido(id) { if(confirm("Excluir?")) { delete db.pedidos[id]; rdb.ref('folhari_v15_print/pedidos').set(db.pedidos || {}); } }
+    function limparHistorico() { if(confirm("ZERAR CAIXA?")) { db.pedidos = {}; rdb.ref('folhari_v15_print/pedidos').set({}); } }
     function novoPedido() { ['item_pizza','item_lanche','item_refri','id_cliente','p-obs'].forEach(i => document.getElementById(i).value = ''); document.getElementById('container-bordas').innerHTML = ''; calcularTotal(); }
     function cad(cat, idN, idV) { const n = document.getElementById(idN).value.trim(), v = parseFloat(document.getElementById(idV).value); if(n && !isNaN(v)) { db[cat][n] = v; salvar(); document.getElementById(idN).value=''; document.getElementById(idV).value=''; } }
-    function apagar(cat, item) { if(confirm(`Excluir ${item}?`)) { delete db[cat][item]; rdb.ref(`folhari_v14_vivenza/${cat}`).set(db[cat] || {}); } }
+    function apagar(cat, item) { if(confirm(`Excluir ${item}?`)) { delete db[cat][item]; rdb.ref(`folhari_v15_print/${cat}`).set(db[cat] || {}); } }
     function setor(e, id) { document.querySelectorAll('.content').forEach(c => c.style.display = 'none'); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).style.display = 'block'; e.currentTarget.classList.add('active'); }
     function toggleEntrega() { document.getElementById('area-bairro').style.display = document.getElementById('p-tipo').value === 'local' ? 'none' : 'block'; }
+    
     function atualizarListas() {
         ['pizzas', 'lanches', 'bordas', 'refris', 'entregas'].forEach(cat => {
             const cont = document.getElementById(`t-${cat}`), dl = document.getElementById(`list-${cat[0]}`);
@@ -283,6 +283,7 @@
             }
         });
     }
+
     function atualizarBordas() {
         const cmd = document.getElementById('item_pizza').value, container = document.getElementById('container-bordas');
         container.innerHTML = ""; const partes = cmd.split(','); let html = '<div class="borda-box"><strong>Bordas:</strong>', tem = false;
@@ -296,4 +297,5 @@
     }
 </script>
 </body>
-</html>
+            </html>
+            
