@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FOLHARI VIVENZA - PDV</title>
+    <title>FOLHARI VIVENZA - SISTEMA COMPLETO</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -51,17 +51,18 @@
     <h2 style="text-align:center;">🍕 <span style="color:var(--p)">Folhari</span> Vivenza</h2>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="setor(event, 's-pedido')">PEDIDO</button>
+        <button class="tab-btn active" onclick="setor(event, 's-pedido')">PDV</button>
         <button class="tab-btn" onclick="setor(event, 's-caixa')">CAIXA</button>
         <button class="tab-btn" onclick="setor(event, 's-pizzas')">PIZZAS</button>
+        <button class="tab-btn" onclick="setor(event, 's-lanches')">LANCHES</button>
         <button class="tab-btn" onclick="setor(event, 's-refris')">BEBIDAS</button>
-        <button class="tab-btn" onclick="setor(event, 's-config')">CONFIG</button>
+        <button class="tab-btn" onclick="setor(event, 's-config')">TAXAS/BORDAS</button>
     </div>
 
     <div id="s-pedido" class="content active">
-        <input list="list-p" id="item_pizza" placeholder="Pizza (ex: 1x calabresa)" oninput="atualizarBordas(); calcularTotal()">
+        <input list="list-p" id="item_pizza" placeholder="Pizzas (ex: 1x calabresa)" oninput="atualizarBordas(); calcularTotal()">
         <div id="container-bordas"></div>
-        <input list="list-l" id="item_lanche" placeholder="Lanches..." oninput="calcularTotal()">
+        <input list="list-l" id="item_lanche" placeholder="Lanches (ex: 2x x-tudo)" oninput="calcularTotal()">
         <input list="list-r" id="item_refri" placeholder="Bebidas..." oninput="calcularTotal()">
         <input type="text" id="id_cliente" placeholder="Nome do Cliente">
         <select id="p-tipo" onchange="toggleEntrega(); calcularTotal()">
@@ -69,7 +70,7 @@
             <option value="local">🏠 Retirada</option>
         </select>
         <div id="area-bairro"><select id="p-taxa-bairro" onchange="calcularTotal()"></select></div>
-        <textarea id="p-obs" rows="2" placeholder="Observações..."></textarea>
+        <textarea id="p-obs" rows="2" placeholder="Observações/Troco..."></textarea>
         
         <button class="btn btn-p" onclick="lancarPedido()">✅ FINALIZAR E IMPRIMIR</button>
         <div id="lista-pedidos" style="margin-top:20px"></div>
@@ -86,13 +87,19 @@
 
     <div id="s-pizzas" class="content">
         <h4>Pizzas</h4>
-        <input id="cp-n" placeholder="Nome"><input type="number" id="cp-v" placeholder="R$"><button class="btn btn-p" onclick="cad('pizzas', 'cp-n', 'cp-v')">SALVAR</button>
+        <input id="cp-n" placeholder="Nome da Pizza"><input type="number" id="cp-v" placeholder="Preço R$"><button class="btn btn-p" onclick="cad('pizzas', 'cp-n', 'cp-v')">SALVAR</button>
         <div id="t-pizzas"></div>
+    </div>
+
+    <div id="s-lanches" class="content">
+        <h4>Lanches</h4>
+        <input id="cl-n" placeholder="Nome do Lanche"><input type="number" id="cl-v" placeholder="Preço R$"><button class="btn btn-p" onclick="cad('lanches', 'cl-n', 'cl-v')">SALVAR</button>
+        <div id="t-lanches"></div>
     </div>
 
     <div id="s-refris" class="content">
         <h4>Bebidas</h4>
-        <input id="cr-n" placeholder="Nome"><input type="number" id="cr-v" placeholder="R$"><button class="btn btn-p" onclick="cad('refris', 'cr-n', 'cr-v')">SALVAR</button>
+        <input id="cr-n" placeholder="Nome da Bebida"><input type="number" id="cr-v" placeholder="Preço R$"><button class="btn btn-p" onclick="cad('refris', 'cr-n', 'cr-v')">SALVAR</button>
         <div id="t-refris"></div>
     </div>
 
@@ -101,7 +108,7 @@
         <input id="cb-n" placeholder="Nome"><input type="number" id="cb-v" placeholder="R$"><button class="btn btn-p" onclick="cad('bordas', 'cb-n', 'cb-v')">SALVAR</button>
         <div id="t-bordas"></div>
         <hr>
-        <h4>Taxas</h4>
+        <h4>Taxas de Entrega</h4>
         <input id="ce-n" placeholder="Bairro"><input type="number" id="ce-v" placeholder="R$"><button class="btn btn-p" onclick="cad('entregas', 'ce-n', 'ce-v')">SALVAR</button>
         <div id="t-entregas"></div>
     </div>
@@ -131,24 +138,38 @@
     const rdb = firebase.database();
     let db = { pizzas: {}, lanches: {}, bordas: {}, refris: {}, entregas: {}, pedidos: {} };
 
-    rdb.ref('folhari_v15_print').on('value', snap => {
+    rdb.ref('folhari_v16_full').on('value', snap => {
         const d = snap.val() || {};
         db = { pizzas: d.pizzas || {}, lanches: d.lanches || {}, bordas: d.bordas || {}, refris: d.refris || {}, entregas: d.entregas || {}, pedidos: d.pedidos || {} };
         atualizarListas(); exibirPedidos(); calcularTotal();
     });
 
-    function salvar() { rdb.ref('folhari_v15_print').update(db); }
+    function salvar() { rdb.ref('folhari_v16_full').update(db); }
+
+    function resolverPreco(cat, texto) {
+        let t = texto.toLowerCase().trim();
+        let q = 1; const m = t.match(/^(\d+)\s*[xX]\s*(.*)/);
+        if(m) { q = parseInt(m[1]); t = m[2].trim(); }
+        
+        let real = Object.keys(db[cat]).find(k => k.toLowerCase() === t);
+        if(real) return { nome: real, preco: db[cat][real], qtd: q };
+        return null;
+    }
 
     function resolverPrecoPizza(texto) {
         let t = texto.toLowerCase().replace(/meia/g, '').trim();
+        let q = 1; const m = t.match(/^(\d+)\s*[xX]\s*(.*)/);
+        if(m) { q = parseInt(m[1]); t = m[2].trim(); }
+
         let saborDireto = Object.keys(db.pizzas).find(k => k.toLowerCase() === t);
-        if (saborDireto) return { nome: saborDireto, preco: db.pizzas[saborDireto] };
+        if (saborDireto) return { nome: saborDireto, preco: db.pizzas[saborDireto], qtd: q };
+        
         let partes = t.split(/[\/]/); 
         if(partes.length < 2) partes = t.split(/\s+e\s+/);
         if (partes.length >= 2) {
             let s1 = Object.keys(db.pizzas).find(k => k.toLowerCase().includes(partes[0].trim()));
             let s2 = Object.keys(db.pizzas).find(k => k.toLowerCase().includes(partes[1].trim()));
-            if (s1 && s2) return { nome: `1/2 ${s1} | 1/2 ${s2}`, preco: Math.max(db.pizzas[s1], db.pizzas[s2]) };
+            if (s1 && s2) return { nome: `1/2 ${s1} | 1/2 ${s2}`, preco: Math.max(db.pizzas[s1], db.pizzas[s2]), qtd: q };
         }
         return null;
     }
@@ -161,22 +182,16 @@
         let total = 0, idxB = 0;
 
         pCmd.split(',').forEach(p => {
-            let q = 1, n = p.trim(); const m = n.match(/^(\d+)\s*[xX]\s*(.*)/);
-            if(m) { q = parseInt(m[1]); n = m[2].trim(); }
-            let pData = resolverPrecoPizza(n);
-            if(pData) { for(let i = 0; i < q; i++) { total += pData.preco + (bSel[idxB]?.value ? db.bordas[bSel[idxB].value] : 0); idxB++; } }
+            let res = resolverPrecoPizza(p);
+            if(res) { for(let i = 0; i < res.qtd; i++) { total += res.preco + (bSel[idxB]?.value ? db.bordas[bSel[idxB].value] : 0); idxB++; } }
         });
         lCmd.split(',').forEach(l => {
-            let q = 1, n = l.trim(); const m = n.match(/^(\d+)\s*[xX]\s*(.*)/);
-            if(m) { q = parseInt(m[1]); n = m[2].trim(); }
-            let lReal = Object.keys(db.lanches).find(k => k.toLowerCase() === n.toLowerCase());
-            if(lReal) total += (db.lanches[lReal] * q);
+            let res = resolverPreco('lanches', l);
+            if(res) total += (res.preco * res.qtd);
         });
         rCmd.split(',').forEach(r => {
-            let q = 1, n = r.trim(); const m = n.match(/^(\d+)\s*[xX]\s*(.*)/);
-            if(m) { q = parseInt(m[1]); n = m[2].trim(); }
-            let rReal = Object.keys(db.refris).find(k => k.toLowerCase() === n.toLowerCase());
-            if(rReal) total += (db.refris[rReal] * q);
+            let res = resolverPreco('refris', r);
+            if(res) total += (res.preco * res.qtd);
         });
         if(document.getElementById('p-tipo').value === 'entrega') total += (db.entregas[document.getElementById('p-taxa-bairro').value] || 0);
         document.getElementById('display-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
@@ -204,27 +219,21 @@
         if(pCmd) {
             res += `PIZZAS:\n`;
             pCmd.split(',').forEach(p => {
-                let q = 1, n = p.trim(); const m = n.match(/^(\d+)\s*[xX]\s*(.*)/);
-                if(m) { q = parseInt(m[1]); n = m[2].trim(); }
-                let pData = resolverPrecoPizza(n);
-                if(pData) { for(let i=0; i<q; i++) {
-                    let v = pData.preco, bTxt = "";
+                let r = resolverPrecoPizza(p);
+                if(r) { for(let i=0; i<r.qtd; i++) {
+                    let v = r.preco, bTxt = "";
                     if(bSel[idxB]?.value) { v += db.bordas[bSel[idxB].value]; bTxt = `\n  + Borda: ${bSel[idxB].value}`; }
-                    res += `1x ${pData.nome}${bTxt}\n  -> R$ ${v.toFixed(2)}\n`; idxB++;
+                    res += `1x ${r.nome}${bTxt}\n  -> R$ ${v.toFixed(2)}\n`; idxB++;
                 }}
             });
         }
         if(lCmd) { res += `\nLANCHES:\n`; lCmd.split(',').forEach(l => {
-            let q = 1, n = l.trim(); const m = n.match(/^(\d+)\s*[xX]\s*(.*)/);
-            if(m) { q = parseInt(m[1]); n = m[2].trim(); }
-            let lR = Object.keys(db.lanches).find(k => k.toLowerCase() === n.toLowerCase());
-            if(lR) res += `${q}x ${lR}\n  -> R$ ${(db.lanches[lR]*q).toFixed(2)}\n`;
+            let r = resolverPreco('lanches', l);
+            if(r) res += `${r.qtd}x ${r.nome}\n  -> R$ ${(r.preco*r.qtd).toFixed(2)}\n`;
         });}
         if(rCmd) { res += `\nBEBIDAS:\n`; rCmd.split(',').forEach(r => {
-            let q = 1, n = r.trim(); const m = n.match(/^(\d+)\s*[xX]\s*(.*)/);
-            if(m) { q = parseInt(m[1]); n = m[2].trim(); }
-            let rR = Object.keys(db.refris).find(k => k.toLowerCase() === n.toLowerCase());
-            if(rR) res += `${q}x ${rR}\n  -> R$ ${(db.refris[rR]*q).toFixed(2)}\n`;
+            let r_ = resolverPreco('refris', r);
+            if(r_) res += `${r_.qtd}x ${r_.nome}\n  -> R$ ${(r_.preco*r_.qtd).toFixed(2)}\n`;
         });}
 
         res += `--------------------------------\n`;
@@ -263,11 +272,11 @@
         document.getElementById('total-dia').innerText = `R$ ${totalD.toFixed(2).replace('.', ',')}`;
     }
 
-    function apagarPedido(id) { if(confirm("Excluir?")) { delete db.pedidos[id]; rdb.ref('folhari_v15_print/pedidos').set(db.pedidos || {}); } }
-    function limparHistorico() { if(confirm("ZERAR CAIXA?")) { db.pedidos = {}; rdb.ref('folhari_v15_print/pedidos').set({}); } }
+    function apagarPedido(id) { if(confirm("Excluir?")) { delete db.pedidos[id]; rdb.ref('folhari_v16_full/pedidos').set(db.pedidos || {}); } }
+    function limparHistorico() { if(confirm("ZERAR CAIXA?")) { db.pedidos = {}; rdb.ref('folhari_v16_full/pedidos').set({}); } }
     function novoPedido() { ['item_pizza','item_lanche','item_refri','id_cliente','p-obs'].forEach(i => document.getElementById(i).value = ''); document.getElementById('container-bordas').innerHTML = ''; calcularTotal(); }
     function cad(cat, idN, idV) { const n = document.getElementById(idN).value.trim(), v = parseFloat(document.getElementById(idV).value); if(n && !isNaN(v)) { db[cat][n] = v; salvar(); document.getElementById(idN).value=''; document.getElementById(idV).value=''; } }
-    function apagar(cat, item) { if(confirm(`Excluir ${item}?`)) { delete db[cat][item]; rdb.ref(`folhari_v15_print/${cat}`).set(db[cat] || {}); } }
+    function apagar(cat, item) { if(confirm(`Excluir ${item}?`)) { delete db[cat][item]; rdb.ref(`folhari_v16_full/${cat}`).set(db[cat] || {}); } }
     function setor(e, id) { document.querySelectorAll('.content').forEach(c => c.style.display = 'none'); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).style.display = 'block'; e.currentTarget.classList.add('active'); }
     function toggleEntrega() { document.getElementById('area-bairro').style.display = document.getElementById('p-tipo').value === 'local' ? 'none' : 'block'; }
     
@@ -277,7 +286,7 @@
             if(cont) cont.innerHTML = ''; if(dl) dl.innerHTML = '';
             if(cat === 'entregas') document.getElementById('p-taxa-bairro').innerHTML = '<option value="">Bairro...</option>';
             for(let i in db[cat]) {
-                if(cont) cont.innerHTML += `<div style="display:flex; justify-content:space-between; padding:8px; background:#1a202c; margin-bottom:5px; border-radius:8px;"><span>${i}</span><span onclick="apagar('${cat}','${i}')" style="color:var(--p)">✕</span></div>`;
+                if(cont) cont.innerHTML += `<div style="display:flex; justify-content:space-between; padding:8px; background:#1a202c; margin-bottom:5px; border-radius:8px;"><span>${i} (R$ ${db[cat][i].toFixed(2)})</span><span onclick="apagar('${cat}','${i}')" style="color:var(--p)">✕</span></div>`;
                 if(dl) dl.innerHTML += `<option value="${i}">`;
                 if(cat === 'entregas') document.getElementById('p-taxa-bairro').innerHTML += `<option value="${i}">${i}</option>`;
             }
@@ -288,10 +297,8 @@
         const cmd = document.getElementById('item_pizza').value, container = document.getElementById('container-bordas');
         container.innerHTML = ""; const partes = cmd.split(','); let html = '<div class="borda-box"><strong>Bordas:</strong>', tem = false;
         partes.forEach(p => {
-            let q = 1, n = p.trim(); const m = n.match(/^(\d+)\s*[xX]\s*(.*)/);
-            if(m) { q = parseInt(m[1]); n = m[2].trim(); }
-            let pData = resolverPrecoPizza(n);
-            if(pData) { tem = true; for(let i = 1; i <= q; i++) html += `<div style="margin:5px 0;">${pData.nome} #${i}: <select class="sel-borda-unidade" onchange="calcularTotal()"><option value="">Sem Borda</option>${Object.keys(db.bordas).map(b => `<option value="${b}">${b}</option>`).join('')}</select></div>`; }
+            let res = resolverPrecoPizza(p);
+            if(res) { tem = true; for(let i = 1; i <= res.qtd; i++) html += `<div style="margin:5px 0;">${res.nome} #${i}: <select class="sel-borda-unidade" onchange="calcularTotal()"><option value="">Sem Borda</option>${Object.keys(db.bordas).map(b => `<option value="${b}">${b}</option>`).join('')}</select></div>`; }
         });
         if(tem) container.innerHTML = html + '</div>';
     }
